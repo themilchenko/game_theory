@@ -5,7 +5,29 @@ import (
 	"slices"
 )
 
-const epsilon float64 = 0.1
+const (
+	epsilon float64 = 0.1
+	N       int     = 5
+)
+
+type Config struct {
+	graphics bool
+	eps      *float64
+}
+
+type Opt func(*Config)
+
+func Graphics() Opt {
+	return func(c *Config) {
+		c.graphics = true
+	}
+}
+
+func Epsilon(eps float64) Opt {
+	return func(c *Config) {
+		c.eps = &eps
+	}
+}
 
 type BrownRobinson struct {
 	m     [][]float64
@@ -14,7 +36,13 @@ type BrownRobinson struct {
 	minTop   float64
 	maxLower float64
 
+	xCount []float64
+	yCount []float64
+
 	sol *Solution
+
+	graphics bool
+	eps      float64
 }
 
 type iter struct {
@@ -31,9 +59,20 @@ type iter struct {
 	eps   float64
 }
 
-func New(m [][]float64) *BrownRobinson {
+func New(m [][]float64, opts ...Opt) *BrownRobinson {
+	config := &Config{}
+	for _, opt := range opts {
+		opt(config)
+	}
+
 	br := &BrownRobinson{
-		m: m,
+		m:        m,
+		graphics: config.graphics,
+		eps:      epsilon,
+	}
+
+	if config.eps != nil {
+		br.eps = *config.eps
 	}
 
 	init := iter{
@@ -57,6 +96,9 @@ func New(m [][]float64) *BrownRobinson {
 	br.minTop = init.top
 	br.maxLower = init.lower
 
+	br.xCount = make([]float64, len(init.aWin))
+	br.yCount = make([]float64, len(init.bLoss))
+
 	return br
 }
 
@@ -64,7 +106,7 @@ func (b *BrownRobinson) Solve() *Solution {
 	// Start with 2 because first one in New() constructor.
 	iterNum := 2
 
-	for b.iters[len(b.iters)-1].eps > epsilon {
+	for !b.isFinish() {
 		b.step(iterNum)
 
 		b.sol.append(b.iters[len(b.iters)-1])
@@ -72,9 +114,25 @@ func (b *BrownRobinson) Solve() *Solution {
 		iterNum++
 	}
 
-	b.sol.finish(b.iters)
+	for _, v := range b.xCount {
+		b.sol.X = append(b.sol.X, v/float64(len(b.iters[len(b.iters)-1].aWin)))
+	}
+	for _, v := range b.yCount {
+		b.sol.Y = append(b.sol.Y, v/float64(len(b.iters[len(b.iters)-1].bLoss)))
+	}
+	b.sol.V = (b.minTop + b.maxLower) / 2
+
+	b.sol.t.Render()
+
+	if b.graphics {
+		b.sol.drawGraphics(b.iters)
+	}
 
 	return b.sol
+}
+
+func (b *BrownRobinson) isFinish() bool {
+	return b.iters[len(b.iters)-1].eps <= b.eps
 }
 
 func (b *BrownRobinson) step(iterNum int) {
@@ -84,19 +142,19 @@ func (b *BrownRobinson) step(iterNum int) {
 		num: iterNum,
 	}
 
-	_, x := b.min(last.bLoss)
-	_, y := b.max(last.aWin)
+	_, it.x = b.max(last.aWin)
+	_, it.y = b.min(last.bLoss)
 
-	it.x = x
-	it.y = y
+	b.xCount[it.x]++
+	b.yCount[it.y]++
 
 	it.aWin = make([]float64, 0, len(last.aWin))
-	for i, v := range b.column(x) {
+	for i, v := range b.column(it.y) {
 		it.aWin = append(it.aWin, last.aWin[i]+v)
 	}
 
 	it.bLoss = make([]float64, 0, len(last.bLoss))
-	for i, v := range b.row(y) {
+	for i, v := range b.row(it.x) {
 		it.bLoss = append(it.bLoss, last.bLoss[i]+v)
 	}
 

@@ -17,7 +17,9 @@ type GameMatrix struct {
 	m      *mat.Dense
 
 	lowestPrice  float64
+	lowestIdx    int
 	highestPrice float64
+	highestIdx   int
 }
 
 func New(m [][]float64) (*GameMatrix, error) {
@@ -49,8 +51,8 @@ func New(m [][]float64) (*GameMatrix, error) {
 		plainM: m,
 		m:      mat.NewDense(rows, cols, flatData),
 	}
-	g.lowestPrice = g.calulateLowestPrice()
-	g.highestPrice = g.calculateHighestPrice()
+	g.lowestPrice, g.lowestIdx = g.calulateLowestPrice()
+	g.highestPrice, g.highestIdx = g.calculateHighestPrice()
 
 	return g, nil
 }
@@ -74,7 +76,7 @@ func (g *GameMatrix) String() string {
 		r := table.Row{fmt.Sprintf("a_%d", i+1)}
 
 		for j := range c {
-			r = append(r, g.m.At(i, j))
+			r = append(r, fmt.Sprintf("%.3f", g.m.At(i, j)))
 		}
 
 		t.AppendRow(append(r, findMinInVec(g.m.RowView(i))))
@@ -97,12 +99,16 @@ func (g *GameMatrix) String() string {
 	return b.String()
 }
 
-func (g *GameMatrix) LowestPrice() float64 {
-	return g.lowestPrice
+func (g *GameMatrix) MatrixString() string {
+	return fmt.Sprintf("%.3v\n", mat.Formatted(g.m))
 }
 
-func (g *GameMatrix) HighestPrice() float64 {
-	return g.highestPrice
+func (g *GameMatrix) LowestPrice() (float64, int) {
+	return g.lowestPrice, g.lowestIdx
+}
+
+func (g *GameMatrix) HighestPrice() (float64, int) {
+	return g.highestPrice, g.highestIdx
 }
 
 func (g *GameMatrix) SolveAnalytical() (*analytical.Solution, error) {
@@ -114,28 +120,28 @@ func (g *GameMatrix) SolveAnalytical() (*analytical.Solution, error) {
 	return solver.Solve()
 }
 
-func (g *GameMatrix) SolveBrownRobinson() *brownrobinson.Solution {
-	solver := brownrobinson.New(g.plainM)
+func (g *GameMatrix) SolveBrownRobinson(opts ...brownrobinson.Opt) *brownrobinson.Solution {
+	solver := brownrobinson.New(g.plainM, opts...)
 
 	return solver.Solve()
 }
 
-func (g *GameMatrix) calulateLowestPrice() float64 {
+func (g *GameMatrix) calulateLowestPrice() (float64, int) {
 	minStrings := make([]float64, 0, g.m.RawMatrix().Rows)
 
 	for i := range g.m.RawMatrix().Rows {
 		minStrings = append(minStrings, findMinInVec(g.m.RowView(i)))
 	}
 
-	return slices.Max(minStrings)
+	return slices.Max(minStrings), slices.Index(minStrings, slices.Max(minStrings))
 }
 
-func (g *GameMatrix) calculateHighestPrice() float64 {
+func (g *GameMatrix) calculateHighestPrice() (float64, int) {
 	maxColumns := make([]float64, 0, g.m.RawMatrix().Cols)
 
 	for j := range g.m.RawMatrix().Cols {
 		maxColumns = append(maxColumns, findMaxInVec(g.m.ColView(j)))
 	}
 
-	return slices.Min(maxColumns)
+	return slices.Min(maxColumns), slices.Index(maxColumns, slices.Min(maxColumns))
 }

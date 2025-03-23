@@ -8,6 +8,7 @@ import (
 	"os"
 
 	gamematrix "github.com/themilchenko/game_theory/internal/game_matrix"
+	brownrobinson "github.com/themilchenko/game_theory/internal/game_matrix/brown_robinson"
 )
 
 func main() {
@@ -39,8 +40,10 @@ func main() {
 	}
 
 	fmt.Println(game.String())
-	fmt.Printf("Lowest Price: %f\n", game.LowestPrice())
-	fmt.Printf("Highest Price: %f\n", game.HighestPrice())
+	l, _ := game.LowestPrice()
+	h, _ := game.HighestPrice()
+	fmt.Printf("Lowest Price: %f\n", l)
+	fmt.Printf("Highest Price: %f\n", h)
 
 	fmt.Println()
 
@@ -54,5 +57,5 @@ func main() {
 
 	fmt.Println("Brown Robinson solution:")
 
-	fmt.Println(game.SolveBrownRobinson().String())
+	fmt.Println(game.SolveBrownRobinson(brownrobinson.Graphics()).String())
 }

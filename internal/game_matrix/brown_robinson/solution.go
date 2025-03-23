@@ -17,17 +17,17 @@ type Solution struct {
 	t table.Writer
 	b *strings.Builder
 
-	x []float64
-	y []float64
-	v float64
+	X []float64
+	Y []float64
+	V float64
 }
 
 func newSolution(xLen, yLen int) *Solution {
 	s := &Solution{
 		t: table.NewWriter(),
 		b: &strings.Builder{},
-		x: make([]float64, 0),
-		y: make([]float64, 0),
+		X: make([]float64, 0),
+		Y: make([]float64, 0),
 	}
 	s.t.SetOutputMirror(s.b)
 
@@ -54,10 +54,10 @@ func newSolution(xLen, yLen int) *Solution {
 func (s *Solution) String() string {
 	xStr := &strings.Builder{}
 	xStr.WriteString("x* = (")
-	for i, v := range s.x {
+	for i, v := range s.X {
 		fmt.Fprintf(xStr, "%.3f", v)
 
-		if i != len(s.x)-1 {
+		if i != len(s.X)-1 {
 			xStr.WriteString(", ")
 		}
 	}
@@ -68,10 +68,10 @@ func (s *Solution) String() string {
 
 	yStr := &strings.Builder{}
 	yStr.WriteString("y* = (")
-	for i, v := range s.y {
+	for i, v := range s.Y {
 		fmt.Fprintf(yStr, "%.3f", v)
 
-		if i != len(s.y)-1 {
+		if i != len(s.Y)-1 {
 			yStr.WriteString(", ")
 		}
 	}
@@ -80,7 +80,7 @@ func (s *Solution) String() string {
 
 	s.b.WriteString(yStr.String())
 
-	fmt.Fprintf(s.b, "v = %.3f", s.v)
+	fmt.Fprintf(s.b, "v = %.3f", s.V)
 
 	return s.b.String()
 }
@@ -90,11 +90,11 @@ func (s *Solution) append(it iter) {
 		fmt.Sprintf("y_%d", it.y+1)}
 
 	for _, v := range it.aWin {
-		r = append(r, v)
+		r = append(r, fmt.Sprintf("%.3f", v))
 	}
 
 	for _, v := range it.bLoss {
-		r = append(r, v)
+		r = append(r, fmt.Sprintf("%.3f", v))
 	}
 
 	r = append(r, fmt.Sprintf("%.3f", it.top),
@@ -102,52 +102,6 @@ func (s *Solution) append(it iter) {
 		fmt.Sprintf("%.3f", it.eps))
 
 	s.t.AppendRow(r)
-}
-
-func (s *Solution) finish(iters []iter) {
-	for i := range iters[0].aWin {
-		cnt := float64(0)
-
-		for _, v := range iters {
-			if v.x == i {
-				cnt++
-			}
-		}
-
-		s.x = append(s.x, cnt/float64(len(iters)))
-	}
-
-	for i := range iters[0].bLoss {
-		cnt := float64(0)
-
-		for _, v := range iters {
-			if v.y == i {
-				cnt++
-			}
-		}
-
-		s.y = append(s.y, cnt/float64(len(iters)))
-	}
-
-	min := iters[0].top
-	for i := 1; i < len(iters); i++ {
-		if min > iters[i].top {
-			min = iters[i].top
-		}
-	}
-
-	max := iters[0].lower
-	for i := 1; i < len(iters); i++ {
-		if max < iters[i].lower {
-			max = iters[i].lower
-		}
-	}
-
-	s.v = (min + max) / 2
-
-	s.t.Render()
-
-	s.drawGraphics(iters)
 }
 
 func (s *Solution) drawGraphics(iters []iter) {
