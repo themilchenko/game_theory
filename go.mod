@@ -3,6 +3,7 @@ module github.com/themilchenko/game_theory
 go 1.23.2
 
 require (
+	github.com/awalterschulze/gographviz v2.0.3+incompatible
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	gonum.org/v1/gonum v0.15.1
 	gonum.org/v1/plot v0.14.0
