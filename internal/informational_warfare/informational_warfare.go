@@ -78,6 +78,8 @@ func (g *InformationalWarfare) Solve(solType SolutionType) {
 	fmt.Printf("Result trust matrix:\n%.3v\n", mat.Formatted(resTrustMatrix))
 
 	switch solType {
+	case General:
+		g.WithGeneral(finalOpinions, player1Influence, player2Influence)
 	case TargetFunction:
 		g.WithTargetFunction(player1InfluenceIndices, player2InfluenceIndices, resTrustMatrix)
 	default:
@@ -85,9 +87,22 @@ func (g *InformationalWarfare) Solve(solType SolutionType) {
 	}
 }
 
+func (g *InformationalWarfare) WithGeneral(finalOpinions *mat.VecDense, player1Influence, player2Influence int) {
+	diff1 := math.Abs(finalOpinions.AtVec(0) - float64(player1Influence))
+	diff2 := math.Abs(finalOpinions.AtVec(0) - float64(player2Influence))
+
+	if diff1 < diff2 {
+		fmt.Println("First player won")
+	} else {
+		fmt.Println("Second player won")
+	}
+}
+
 func (g *InformationalWarfare) WithTargetFunction(player1InfluenceIndices, player2InfluenceIndices []int,
 	resTrustMatrix *mat.Dense,
 ) {
+	fmt.Printf("Result trust matrix:\n%.3v\n", mat.Formatted(resTrustMatrix))
+
 	rF := 0.0
 	for _, idx := range player1InfluenceIndices {
 		rF += resTrustMatrix.At(0, idx)
