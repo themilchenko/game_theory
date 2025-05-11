@@ -1,1 +1,8 @@
 *.DS_Store
+*.acn
+*.aux
+*.bcf
+*.glo*
+*.log
+*.xml
+*.xdy
